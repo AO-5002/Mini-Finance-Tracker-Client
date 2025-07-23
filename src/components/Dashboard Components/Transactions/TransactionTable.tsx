@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { TableSelf } from "./TableSelf";
-import { CreateTransaction } from "./CreateTransaction";
+import { CreateTransaction } from "./BtnComponents/CreateTransaction";
 import { Import } from "lucide-react";
 
-import { DropDownFilter } from "./DropDownFilter";
+import { DropDownFilter } from "./BtnComponents/DropDownFilter";
 
 export default function TransactionTable() {
   return (
