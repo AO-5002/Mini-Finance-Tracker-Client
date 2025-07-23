@@ -8,25 +8,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getTransactions } from "@/utility/APIs/TransactionAPI";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth0 } from "@auth0/auth0-react";
+import loadTransactionQueryOptions from "@/utility/QueryOptions/loadTransactionQueryOptions";
 
 export function TableSelf() {
-  const { getAccessTokenSilently } = useAuth0();
-
-  const { data: transactions, isLoading } = useQuery({
-    queryKey: ["transactions"],
-    queryFn: async () => {
-      const accessToken = await getAccessTokenSilently();
-      return getTransactions(accessToken);
-    },
-  });
-
-  console.log(transactions);
+  const { data: transactions, isPending } = useQuery(
+    loadTransactionQueryOptions()
+  );
 
   return (
-    <Table className="border h-full ">
+    <Table className=" h-full ">
       <TableCaption>A list of your recent invoices.</TableCaption>
       <TableHeader className="">
         <TableRow className="">
@@ -37,14 +28,22 @@ export function TableSelf() {
         </TableRow>
       </TableHeader>
       <TableBody className="">
-        {!isLoading ? (
-          transactions.map((transaction: any) => (
-            <TableRow key={transaction.id}>
+        {!isPending ? (
+          transactions?.map((transaction) => (
+            <TableRow className="text-xs font-light" key={transaction.id}>
               <TableCell className="font-medium">
                 {transaction.createdAt}
               </TableCell>
               <TableCell>{transaction.transactionName}</TableCell>
-              <TableCell>{transaction.type}</TableCell>
+              <TableCell>
+                {transaction.type.toLowerCase() === "expense" ? (
+                  <span className="py-2 px-3  font-bold bg-red-400 rounded-lg text-red-100">
+                    Expense
+                  </span>
+                ) : (
+                  "Income"
+                )}
+              </TableCell>
               <TableCell className="text-right">{transaction.amount}</TableCell>
             </TableRow>
           ))
