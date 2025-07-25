@@ -1,24 +1,42 @@
 import axios from "axios";
-import type { TransactionSchema } from "../Schemas/Transaction";
+import { type Transaction, TransactionSchema } from "../Schemas/Transaction";
 
 async function createTransaction(
   token: Promise<string>,
-  newTransaction: Omit<TransactionSchema, "id" | "createdAt">
+  newTransaction: Omit<Transaction, "id" | "createdAt">
 ) {
   try {
+    const validTransaction = TransactionSchema.omit({
+      id: true,
+      createdAt: true,
+    }).safeParse(newTransaction);
     const resolvedToken = await token; // Await the token promise
-    const response = await axios.post(
-      "http://localhost:8080/transaction/private",
-      newTransaction,
-      {
-        headers: {
-          Authorization: `Bearer ${resolvedToken}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    if (validTransaction.success) {
+      const response = await axios.post(
+        "http://localhost:8080/transaction/private",
+        newTransaction,
+        {
+          headers: {
+            Authorization: `Bearer ${resolvedToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-    console.log("Transaction Saved: " + response);
+      console.log("Transaction Saved: " + response);
+    } else {
+      let zodErrors = {};
+      validTransaction.error.issues.forEach((issue) => {
+        zodErrors = { ...zodErrors, [issue.path[0]]: issue.message };
+      });
+
+      // ✅ Create error message from the zodErrors object
+      const errorMessages = Object.entries(zodErrors)
+        .map(([field, message]) => `${field}: ${message}`)
+        .join(", ");
+
+      throw new Error(`Validation failed: ${errorMessages}`);
+    }
   } catch (error: any) {
     if (error.response) {
       console.log("🔥 Server responded with an error:");

@@ -13,25 +13,35 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import type { TransactionSchema } from "@/utility/Schemas/Transaction";
+import {
+  type Transaction,
+  TransactionSchema,
+} from "@/utility/Schemas/Transaction";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { createTransaction } from "@/utility/APIs/TransactionAPI";
 import { useAccessToken } from "@/hooks/useAccessToken";
 import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 export function CreateTransaction() {
   const getAccessToken = useAccessToken();
-  const queryClient = useQueryClient(); // Use the hook instead
+  const queryClient = useQueryClient();
 
-  const [form, setForm] = useState({
-    transactionName: "",
-    type: "",
-    amount: "",
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm({
+    resolver: zodResolver(
+      TransactionSchema.omit({ id: true, createdAt: true })
+    ),
   });
 
   const { mutate } = useMutation({
     mutationFn: async (
-      transactionObject: Omit<TransactionSchema, "id" | "createdAt">
+      transactionObject: Omit<Transaction, "id" | "createdAt">
     ) => {
       const token = getAccessToken();
       await createTransaction(token, transactionObject);
@@ -41,27 +51,15 @@ export function CreateTransaction() {
         queryKey: ["transactions"],
       });
       toast("Success!");
+      reset();
     },
     onError: () => {
       toast("Fail!");
     },
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [id]: value,
-    }));
-  };
-
-  const handleSubmit = () => {
-    mutate({
-      transactionName: form.transactionName,
-      amount: Number(form.amount),
-      type: form.type,
-    });
-    setForm({ transactionName: "", type: "", amount: "" });
+  const onSubmit = (data: Omit<Transaction, "id" | "createdAt">) => {
+    mutate(data);
   };
 
   return (
@@ -79,32 +77,55 @@ export function CreateTransaction() {
             Input name, type, and amount for this transaction.
           </SheetDescription>
         </SheetHeader>
-        <div className="grid flex-1 auto-rows-min gap-6 px-4">
-          <div className="grid gap-3">
-            <Label htmlFor="transactionName">Name</Label>
-            <Input
-              id="transactionName"
-              value={form.transactionName}
-              onChange={handleChange}
-            />
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex flex-col h-full"
+        >
+          <div className="grid flex-1 auto-rows-min gap-6 px-4">
+            <div className="grid gap-3">
+              <Label htmlFor="transactionName">Name</Label>
+              <Input
+                id="transactionName"
+                {...register("transactionName")} // ✅ Remove manual validation
+              />
+              {errors.transactionName && (
+                <span className="text-red-400">
+                  {errors.transactionName.message}
+                </span>
+              )}
+            </div>
+            <div className="grid gap-3">
+              <Label htmlFor="type">Type</Label>
+              <Input
+                id="type"
+                {...register("type")} // ✅ Remove manual validation
+              />
+              {errors.type && (
+                <span className="text-red-400">{errors.type.message}</span>
+              )}
+            </div>
+            <div className="grid gap-3">
+              <Label htmlFor="amount">Amount</Label>
+              <Input
+                id="amount"
+                type="number" // ✅ Add number type for better UX
+                {...register("amount", { valueAsNumber: true })} // ✅ Convert to number
+              />
+              {errors.amount && (
+                <span className="text-red-400">{errors.amount.message}</span>
+              )}
+            </div>
           </div>
-          <div className="grid gap-3">
-            <Label htmlFor="type">Type</Label>
-            <Input id="type" value={form.type} onChange={handleChange} />
-          </div>
-          <div className="grid gap-3">
-            <Label htmlFor="amount">Amount</Label>
-            <Input id="amount" value={form.amount} onChange={handleChange} />
-          </div>
-        </div>
-        <SheetFooter>
-          <Button type="button" onClick={() => handleSubmit()}>
-            Save changes
-          </Button>
-          <SheetClose asChild>
-            <Button variant="outline">Close</Button>
-          </SheetClose>
-        </SheetFooter>
+
+          <SheetFooter>
+            <Button type="submit">Save changes</Button>
+            <SheetClose asChild>
+              <Button variant="outline" type="button">
+                Close
+              </Button>
+            </SheetClose>
+          </SheetFooter>
+        </form>
       </SheetContent>
     </Sheet>
   );
