@@ -10,11 +10,29 @@ import {
 } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import loadTransactionQueryOptions from "@/utility/QueryOptions/loadTransactionQueryOptions";
+import { useState } from "react";
+import { EditTransaction } from "./BtnComponents/EditTransaction";
+import { type Transaction } from "@/utility/Schemas/Transaction";
 
-export function TableSelf() {
+interface QueryParams {
+  sortBy?: string | undefined;
+  order?: "ASC" | "DESC" | undefined;
+}
+
+export function TableSelf({ sortBy, order }: QueryParams) {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<
+    Transaction | undefined
+  >();
+
   const { data: transactions, isPending } = useQuery(
-    loadTransactionQueryOptions()
+    loadTransactionQueryOptions({ sortBy, order })
   );
+
+  const handleRowClick = (transaction: any) => {
+    setSelectedTransaction(transaction);
+    setDialogOpen(true);
+  };
 
   return (
     <Table className=" h-full ">
@@ -30,18 +48,24 @@ export function TableSelf() {
       <TableBody className="">
         {!isPending ? (
           transactions?.map((transaction) => (
-            <TableRow className="text-xs font-light" key={transaction.id}>
+            <TableRow
+              key={transaction.id}
+              className="text-xs font-light cursor-pointer"
+              onClick={() => handleRowClick(transaction)}
+            >
               <TableCell className="font-medium">
                 {transaction.createdAt}
               </TableCell>
               <TableCell>{transaction.transactionName}</TableCell>
               <TableCell>
                 {transaction.type.toLowerCase() === "expense" ? (
-                  <span className="py-2 px-3  font-bold bg-red-400 rounded-lg text-red-100">
+                  <span className="py-2 px-3 font-bold bg-red-400 rounded-lg text-red-100">
                     Expense
                   </span>
                 ) : (
-                  "Income"
+                  <span className="py-2 px-3 font-bold bg-green-400 rounded-lg text-green-100">
+                    Income
+                  </span>
                 )}
               </TableCell>
               <TableCell className="text-right">{transaction.amount}</TableCell>
@@ -57,6 +81,12 @@ export function TableSelf() {
           <TableCell className="text-right">$2,500.00</TableCell>
         </TableRow>
       </TableFooter>
+      <EditTransaction
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        transaction={selectedTransaction}
+        key={selectedTransaction?.id}
+      />
     </Table>
   );
 }

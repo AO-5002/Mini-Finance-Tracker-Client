@@ -6,16 +6,25 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
   DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export function DropDownFilter() {
+type DropDownFilterProps = {
+  setSortBy: (value: string) => void;
+  setOrder: (value: "ASC" | "DESC") => void;
+};
+
+export function DropDownFilter({ setSortBy, setOrder }: DropDownFilterProps) {
+  const handleDateFilter = (date: string, order: "ASC" | "DESC") => {
+    setSortBy(date);
+    setOrder(order);
+  };
+
+  const handleAmountFilter = (amount: string, order: "ASC" | "DESC") => {
+    setSortBy(amount);
+    setOrder(order);
+  };
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -30,11 +39,15 @@ export function DropDownFilter() {
       <DropdownMenuContent className="w-56" align="start">
         <DropdownMenuLabel>Filter by:</DropdownMenuLabel>
         <DropdownMenuGroup>
-          <DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => handleDateFilter("createdAt", "DESC")}
+          >
             Date
             <DropdownMenuShortcut>⌘D</DropdownMenuShortcut>
           </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => handleAmountFilter("amount", "DESC")}
+          >
             Amount
             <DropdownMenuShortcut>⌘A</DropdownMenuShortcut>
           </DropdownMenuItem>

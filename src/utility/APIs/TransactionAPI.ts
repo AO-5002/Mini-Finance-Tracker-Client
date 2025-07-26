@@ -14,7 +14,7 @@ async function createTransaction(
     if (validTransaction.success) {
       const response = await axios.post(
         "http://localhost:8080/transaction/private",
-        newTransaction,
+        validTransaction.data,
         {
           headers: {
             Authorization: `Bearer ${resolvedToken}`,
@@ -55,7 +55,7 @@ async function createTransaction(
   }
 }
 
-async function getTransactions(token: string) {
+async function getTransactions(token: string, sortBy?: string, order?: string) {
   try {
     const response = await axios.get(
       "http://localhost:8080/transaction/private",
@@ -63,6 +63,10 @@ async function getTransactions(token: string) {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
+        },
+        params: {
+          sortBy,
+          order,
         },
       }
     );
@@ -74,4 +78,54 @@ async function getTransactions(token: string) {
   }
 }
 
-export { getTransactions, createTransaction };
+async function updateTransaction(
+  id: string,
+  token: Promise<string>,
+  updateTransaction: Omit<Transaction, "id" | "createdAt">
+) {
+  try {
+    const resolvedToken = await token;
+    const validUpdate = TransactionSchema.omit({
+      id: true,
+      createdAt: true,
+    }).safeParse(updateTransaction);
+
+    if (validUpdate.success) {
+      const response = await axios.patch(
+        `http://localhost:8080/transaction/private/${id}`,
+        validUpdate.data,
+        {
+          headers: {
+            Authorization: `Bearer ${resolvedToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log(`Success updating transaction - ${id}: ${response}`);
+    }
+  } catch (e) {
+    console.log("Error updating transaction " + id);
+    throw e;
+  }
+}
+
+async function deleteTransaction(token: Promise<string>, id: string) {
+  try {
+    const resolvedToken = await token;
+    await axios.delete(`http://localhost:8080/transaction/private/${id}`, {
+      headers: {
+        Authorization: `Bearer ${resolvedToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+  }
+}
+
+export {
+  getTransactions,
+  createTransaction,
+  updateTransaction,
+  deleteTransaction,
+};
